@@ -30,10 +30,13 @@ export const registerHandler = catchErrors(async (req, res) => {
     ...req.body,
     userAgent: req.headers["user-agent"],
   });
-  const { user, accessToken, refreshToken } = await createAccount(request);
-  return setAuthCookies({ res, accessToken, refreshToken })
+  
+  const { user, message } = await createAccount(request);
+  
+  // Return only user and message, no auth cookies
+  return res
     .status(CREATED)
-    .json(user);
+    .json({ user, message });
 });
 
 export const loginHandler = catchErrors(async (req, res) => {

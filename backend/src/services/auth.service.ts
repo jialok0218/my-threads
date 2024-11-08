@@ -65,26 +65,10 @@ export const createAccount = async (data: CreateAccountParams) => {
   // ignore email errors for now
   if (error) console.error(error);
 
-  // create session
-  const session = await SessionModel.create({
-    userId,
-    userAgent: data.userAgent,
-  });
-
-  const refreshToken = signToken(
-    {
-      sessionId: session._id,
-    },
-    refreshTokenSignOptions
-  );
-  const accessToken = signToken({
-    userId,
-    sessionId: session._id,
-  });
+  // Only return user info, no tokens
   return {
     user: user.omitPassword(),
-    accessToken,
-    refreshToken,
+    message: "Please check your email to verify your account"
   };
 };
 
@@ -100,6 +84,8 @@ export const loginUser = async ({
 }: LoginParams) => {
   const user = await UserModel.findOne({ email });
   appAssert(user, UNAUTHORIZED, "Invalid email or password");
+
+  appAssert(user.verified, UNAUTHORIZED, "Please verify your email before logging in");
 
   const isValid = await user.comparePassword(password);
   appAssert(isValid, UNAUTHORIZED, "Invalid email or password");
@@ -192,8 +178,7 @@ export const refreshUserAccessToken = async (refreshToken: string) => {
 };
 
 export const sendPasswordResetEmail = async (email: string) => {
-  // Catch any errors that were thrown and log them (but always return a success)
-  // This will prevent leaking sensitive data back to the client (e.g. user not found, email not sent).
+
   try {
     const user = await UserModel.findOne({ email });
     appAssert(user, NOT_FOUND, "User not found");
